@@ -1,0 +1,48 @@
+@import "tailwindcss";
+
+@layer utilities {
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  max-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-family: sans-serif;
+  position: relative;
+}
+
+.blur-pink-circle {
+  width: 800px;
+  height: 800px;
+  position: fixed;
+  background-color: #ff86e1;
+  border-radius: 50%;
+  filter: blur(500px);
+  z-index: -1;
+  bottom: -200px;
+  left: 45%;
+  transform: translateX(-50%);
+}
+
+.blur-violet-circle {
+  width: 460px;
+  height: 460px;
+  position: fixed;
+  background-color: #89bcff;
+  border-radius: 50%;
+  filter: blur(500px);
+  z-index: -1;
+  bottom: -100px;
+  left: 55%;
+}
