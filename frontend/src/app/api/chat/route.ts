@@ -12,11 +12,16 @@ export async function POST(req: Request) {
       },
     ];
 
+    const apiKey = process.env.N8N_API_KEY;
+    if (!apiKey) {
+      throw new Error("N8N_API_KEY is not set in environment variables");
+    }
+
     const res = await fetch(process.env.N8N_WEBHOOK_URL!, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "x-api-key": process.env.N8N_API_KEY!,
+        "x-api-key": apiKey,
       },
       body: JSON.stringify(payload),
     });
