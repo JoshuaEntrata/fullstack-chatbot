@@ -1,36 +1,70 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+## Project Overview
 
-## Getting Started
+This project is a **Retrieval-Augmented Generation (RAG) chatbot** that allows users to ask questions and receive accurate answers based only on internal documents.
 
-First, run the development server:
+For this personal project, I used a **coffee shop** as a sample use case, where documents such as _About Us_ and _FAQs_ stored in Google Docs serve as the chatbot’s knowledge base.
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+The system uses **n8n** to handle document ingestion and chat requests, while a **Next.js frontend** provides the user interface. All responses are generated strictly from the indexed documents, helping reduce hallucinations and ensuring the chatbot only answers using approved information.
+
+---
+
+## Key Features
+
+- Document-based question answering (RAG)
+- Automatic document ingestion from Google Drive
+- Semantic search using vector embeddings
+- LLM-powered responses with strict grounding rules
+- Session-based conversational memory
+- API-first design for frontend integration
+- Secure access via API key validation
+
+---
+
+## High-Level Architecture
+
+```
+Google Drive
+│
+▼
+[n8n Ingestion Workflow]
+├─ Download documents
+├─ Split text into chunks
+├─ Generate embeddings
+└─ Store vectors in a vector database
+│
+▼
+[n8n RAG Chat API Workflow]
+├─ API key & input validation
+├─ Retrieve relevant document chunks
+├─ Generate response using an LLM
+└─ Return structured API response
+│
+▼
+[Next.js Frontend]
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+---
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Technology Stack
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+- **Frontend:** Next.js (React)
+- **Workflow Engine:** n8n
+- **LLM & Embeddings:** Google Gemini
+- **Vector Database:** Pinecone
+- **Document Source:** Google Drive
+- **Database:** PostgreSQL (for n8n persistence)
+- **Infrastructure:** Docker & Docker Compose
 
-## Learn More
+---
 
-To learn more about Next.js, take a look at the following resources:
+## High-Level Setup
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+1. Clone the repository
+2. Configure required environment variables (API keys and service configs)
+3. Start backend services using Docker Compose
+4. Import and activate the n8n workflows
+   - Document ingestion workflow
+   - RAG chat API workflow
+5. Run the Next.js frontend and connect it to the RAG API
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Once running, documents added or updated in the connected Google Drive folder are automatically indexed and immediately available for chat queries.
