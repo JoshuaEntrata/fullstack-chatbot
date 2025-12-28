@@ -1,0 +1,586 @@
+{
+  "name": "rag_chat_api",
+  "nodes": [
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $('Webhook').item.json.body[0].chatInput }}",
+        "options": {
+          "systemMessage": "You are a helpful and professional shop assistant.\n\nYour job is to answer customer questions using ONLY the information retrieved from internal shop documents.\n\nYou MUST call the shop_documents_tool before answering any question.\n\nYou MUST follow these rules:\n\n1. You may ONLY use information that is explicitly or reasonably inferred from the retrieved documents.\n2. You may summarize, recommend, or rephrase information if it is supported by the documents.\n3. You must NOT introduce facts, prices, items, or claims that are not present in the documents.\n4. You must NOT use outside knowledge, assumptions, or prior training data.\n5. You must NOT hallucinate or guess.\n\nRECOMMENDATION RULE:\n- If the user asks for suggestions, recommendations, or opinions (e.g. \"what do you suggest?\", \"what's good?\"),\n  base your response on the available items in the retrieved documents.\n- Phrase recommendations neutrally (e.g. \"You might like...\" or \"A popular option is...\").\n- Do NOT invent popularity, rankings, or preferences unless explicitly stated in the documents.\n\nFAILURE HANDLING:\n- ONLY respond with:\n  \"I cannot find the answer in the available resources.\"\n  if the retrieved documents contain no relevant information at all.\n\nANSWER STYLE:\n- Natural, conversational, and friendly\n- Clear and concise\n- Helpful to a real customer\n- No robotic or system-like phrasing\n- Do not mention internal systems, tools, or documents\n\nOUTPUT RULES:\n- Return a single, plain-text response\n- No JSON, markdown, lists, or code blocks\n- No citations unless explicitly requested\n\nYou must follow these rules at all times."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2.2,
+      "position": [
+        -832,
+        32
+      ],
+      "id": "2f90563c-1826-4639-bc27-3248faadf447",
+      "name": "AI Agent",
+      "retryOnFail": true,
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        -832,
+        272
+      ],
+      "id": "9d558b52-3be5-4756-8368-61e9fa7559df",
+      "name": "Google Gemini Chat Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "5NJrLEUtDAmSimpd",
+          "name": "prod-rag-chatbot"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "={{ $('Webhook').item.json.body[0].sessionId ?? $execution.id }}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [
+        -736,
+        400
+      ],
+      "id": "3a8ec2e8-d105-46c7-8afb-42823048ad87",
+      "name": "Simple Memory"
+    },
+    {
+      "parameters": {
+        "description": "Retrieve information from any shop documents"
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolVectorStore",
+      "typeVersion": 1.1,
+      "position": [
+        -528,
+        224
+      ],
+      "id": "5c2816c8-ded7-4287-8ff3-4e5d2adb8ba8",
+      "name": "Answer questions with a vector store"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        -336,
+        400
+      ],
+      "id": "bc9c5813-b4ba-4dae-8fa5-a96c15a30bcd",
+      "name": "Google Gemini Chat Model (retrieval)",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "5NJrLEUtDAmSimpd",
+          "name": "prod-rag-chatbot"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "type": "@n8n/n8n-nodes-langchain.embeddingsGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        -608,
+        576
+      ],
+      "id": "26c3cdde-de63-4425-a875-2d54b5c485bd",
+      "name": "Embeddings Google Gemini (retrieval)",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "5NJrLEUtDAmSimpd",
+          "name": "prod-rag-chatbot"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "pineconeIndex": {
+          "__rl": true,
+          "value": "rag-chatbot",
+          "mode": "list",
+          "cachedResultName": "rag-chatbot"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.vectorStorePinecone",
+      "typeVersion": 1.3,
+      "position": [
+        -608,
+        400
+      ],
+      "id": "c3e7ef9c-49f3-4644-97d8-857aefa57810",
+      "name": "Pinecone Vector Store (Retrieval)",
+      "credentials": {
+        "pineconeApi": {
+          "id": "s38msjfYUBX45bpg",
+          "name": "pinecone-rag-chatbot"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "/rag-chat",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -1904,
+        64
+      ],
+      "id": "cbc75dc0-70ea-440b-98bb-b0782feb655b",
+      "name": "Webhook",
+      "webhookId": "8d1bb64a-af91-43f3-b58b-d883a963df1b"
+    },
+    {
+      "parameters": {
+        "options": {
+          "responseCode": "={{ $json.code }}"
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        304,
+        512
+      ],
+      "id": "6f01da8f-5637-4bcf-9cac-c955166ac2e4",
+      "name": "Respond to Webhook"
+    },
+    {
+      "parameters": {
+        "mode": "raw",
+        "jsonOutput": "={\n  \"code\": 400,\n  \"success\": false,\n  \"message\": \"Invalid request payload. 'chatInput' is required.\",\n  \"session_id\": \"{{ $('Webhook').item.json.body[0].sessionId }}\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -672,
+        784
+      ],
+      "id": "17f7297d-12ae-4a8b-b486-576a51a42186",
+      "name": "Invalid Request Response"
+    },
+    {
+      "parameters": {
+        "mode": "raw",
+        "jsonOutput": "={\n  \"code\": 200,\n  \"success\": true,\n  \"message\": {{ JSON.stringify($json.output) }},\n  \"session_id\": \"{{ $('Webhook').item.json.body[0].sessionId }}\"\n}",
+        "options": {
+          "dotNotation": false
+        }
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        0,
+        0
+      ],
+      "id": "4f8c1b88-d024-472a-ab82-b9d8b72b09dd",
+      "name": "Success Response"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "64881d10-7f7f-4999-8147-f55fceba2935",
+              "leftValue": "={{ $('Webhook').item.json.body }}",
+              "rightValue": "",
+              "operator": {
+                "type": "array",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            },
+            {
+              "id": "c624e916-443a-424d-8d70-33ecf8a3c0ed",
+              "leftValue": "={{ $('Webhook').item.json.body[0].chatInput }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -1216,
+        48
+      ],
+      "id": "1cb89e9b-2426-4c5a-bc9e-4c05da1dfa6a",
+      "name": "Input Validation"
+    },
+    {
+      "parameters": {
+        "mode": "raw",
+        "jsonOutput": "={\n  \"code\": 503,\n  \"success\": false,\n  \"message\": \"{{ $json.error }}\",\n  \"session_id\": \"{{ $('Webhook').item.json.body[0].sessionId }}\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        0,
+        352
+      ],
+      "id": "2908dfc2-ba74-446d-82c6-7df705c6f224",
+      "name": "AI Error Response"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "52e2f410-dcb2-4e34-aff5-6aff086e2363",
+              "leftValue": "={{ $json.output }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -272,
+        16
+      ],
+      "id": "1ff0f896-fbbd-4b2f-b1f2-ab7cb14d488b",
+      "name": "Check AI Output"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "c555f79b-1848-4fbf-82dc-1597942fc372",
+              "leftValue": "={{ $('Webhook').item.json.headers['x-api-key'] }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            },
+            {
+              "id": "abcc6852-8613-4bc4-8989-05ac3bfc1e97",
+              "leftValue": "={{ $('Webhook').item.json.headers['x-api-key'] }}",
+              "rightValue": "={{ $env.RAG_API_KEY }}",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -1520,
+        64
+      ],
+      "id": "d93b6b93-0348-4269-83ff-c61f6f808cf3",
+      "name": "API Key Check"
+    },
+    {
+      "parameters": {
+        "mode": "raw",
+        "jsonOutput": "={\n  \"request_id\": {{ $execution.id }}\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -1728,
+        64
+      ],
+      "id": "370a65ee-baaf-4513-a453-76beed650348",
+      "name": "Set Execution ID"
+    },
+    {
+      "parameters": {
+        "mode": "raw",
+        "jsonOutput": "={\n  \"code\": 401,\n  \"success\": false,\n  \"message\": \"Unauthorized.\",\n  \"session_id\": \"{{ $('Webhook').item.json.body[0].sessionId }}\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -672,
+        1072
+      ],
+      "id": "edcde2cb-9857-4df4-a90a-e33a3fdf7853",
+      "name": "Unauthorized Response"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Check AI Output",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "AI Error Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Simple Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Answer questions with a vector store": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model (retrieval)": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Answer questions with a vector store",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Embeddings Google Gemini (retrieval)": {
+      "ai_embedding": [
+        [
+          {
+            "node": "Pinecone Vector Store (Retrieval)",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Pinecone Vector Store (Retrieval)": {
+      "ai_vectorStore": [
+        [
+          {
+            "node": "Answer questions with a vector store",
+            "type": "ai_vectorStore",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Set Execution ID",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Invalid Request Response": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Success Response": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Input Validation": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Invalid Request Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Error Response": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check AI Output": {
+      "main": [
+        [
+          {
+            "node": "Success Response",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "AI Error Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "API Key Check": {
+      "main": [
+        [
+          {
+            "node": "Input Validation",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Unauthorized Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set Execution ID": {
+      "main": [
+        [
+          {
+            "node": "API Key Check",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Unauthorized Response": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "9013e37f-d6e2-4a2f-8810-00ba8b4e9d98",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "0e7a789dc8d47e7cbc9e8ce7e2799fc21bc535c27c690e41de61bc042ca54f69"
+  },
+  "id": "gizN6KRadIH2HRNL",
+  "tags": [
+    {
+      "name": "rag-chatbot",
+      "id": "UzIx77Df70GdS0hR",
+      "createdAt": "2025-12-28T13:21:51.884Z",
+      "updatedAt": "2025-12-28T13:21:51.884Z"
+    }
+  ]
+}
